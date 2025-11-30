@@ -158,7 +158,9 @@ class Lexer:
             case ':':
                 token=self.__new_token(TokenType.COLON, self.current_character)    
             case ',':
-                token=self.__new_token(TokenType.COMMA, self.current_character)   
+                token=self.__new_token(TokenType.COMMA, self.current_character) 
+            case '"':
+                token = self.__new_token(TokenType.STRING, self.__read_string())
             case'(':
                 token=self.__new_token(TokenType.LEFTPARENTHESES, self.current_character)
             case')':
@@ -183,3 +185,11 @@ class Lexer:
         #read a new character and return the token
         self.__read_char()
         return token
+    
+    def __read_string(self):
+        position = self.position + 1
+        while True:
+            self.__read_char()
+            if self.current_character == '"' or self.current_character is None:
+                break
+        return self.source[position:self.position]

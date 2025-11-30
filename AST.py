@@ -18,6 +18,7 @@ class NodeType(Enum):
     BooleanLiteral = "BooleanLiteral"
     CallExpression = "CallExpression"
     FunctionParameter = "FunctionParameter"
+    StringLiteral = "StringLiteral"
 
 
 class Node(ABC):
@@ -264,6 +265,21 @@ class BooleanLiteral(Expression):
 
     def type(self):
         return NodeType.BooleanLiteral
+
+    def json(self):
+        return {
+            "type": self.type().value,
+            "value": self.value
+        }
+    
+
+
+class StringLiteral(Expression):
+    def __init__(self, value=None):
+        self.value = value
+
+    def type(self):
+        return NodeType.StringLiteral
 
     def json(self):
         return {

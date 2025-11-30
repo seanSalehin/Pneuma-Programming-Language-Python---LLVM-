@@ -1,7 +1,9 @@
-act TestFunction(a:int, b:int)=>int{
-    return a-b;
+act add(a:int, b:int)=>int{
+    return a+b;
 }
 
+
 act main()=>int{
-    return TestFunction(1, 2); 
+    printf("kiwi %i", add(2, 3));
+    return add(2, 3);
 }

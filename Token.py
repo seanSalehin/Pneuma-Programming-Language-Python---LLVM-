@@ -13,6 +13,7 @@ class TokenType(Enum):
     IDENT = "IDENT"
     INT = "INT"
     FLOAT = "FLOAT"
+    STRING = "STRING"
     
 
 
@@ -102,7 +103,7 @@ ALT_KEYWORDS: dict[str, TokenType]={
     "else":TokenType.ELSE
 }
 
-TYPE_KEYWORDS: list[str] = ["int", "float"]
+TYPE_KEYWORDS: list[str] = ["int", "float", "str", "void"]
 
 def lookup_ident(ident:str) -> TokenType:
     tt: TokenType | None = KEYWORDS.get(ident)

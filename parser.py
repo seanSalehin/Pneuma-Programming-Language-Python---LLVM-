@@ -3,7 +3,7 @@ from Token import Token, TokenType
 from typing import Callable
 from enum import Enum, auto
 from AST import Statement, Expression, Program, ExpressionStatement, InfixExpression, IntegerLiteral, FloatLiteral, IdentifierLiteral, LetStatement
-from AST import FunctionStatement, ReturnStatement, BlockStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter
+from AST import FunctionStatement, ReturnStatement, BlockStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter, StringLiteral
 
 # precedence Type => evels of operator priority from lowest to highest
 class PresedanceType(Enum):
@@ -53,6 +53,7 @@ class Parser:
             TokenType.IF:self.__parse_if_statement,
             TokenType.TRUE:self.__parse_boolean,
             TokenType.FALSE:self.__parse_boolean,
+            TokenType.STRING:self.__parse_string_literal,
         }
 
         self.infix_parse={
@@ -421,3 +422,7 @@ class Parser:
 
     def __parse_boolean(self):
         return BooleanLiteral(value=self.__current_token(TokenType.TRUE))
+    
+
+    def __parse_string_literal(self):
+        return StringLiteral(value = self.current_token.literal)

@@ -1,5 +1,5 @@
-Pneuma => JIT programming language
-
+Pneuma => JIT programming language 
+Entery point => main
 
 varibles => Mark
 Declearing a variable :
@@ -72,4 +72,12 @@ act main()=>int{
 
 
 
-strings + printf
+strings + printf => Kiwi 5
+act add(a:int, b:int)=>int{
+    return a+b;
+}
+
+act main()=>int{
+    printf("kiwi %i", add(2, 3));
+    return add(2, 3);
+}

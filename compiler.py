@@ -2,7 +2,7 @@ from llvmlite import ir
 
 from AST import NodeType, Statement, Expression, Program, ExpressionStatement, InfixExpression, IntegerLiteral, FloatLiteral, IdentifierLiteral
 from Environment import Environment
-from AST import FunctionStatement, BlockStatement, ReturnStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter
+from AST import FunctionStatement, BlockStatement, ReturnStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter, StringLiteral
 
 class Compiler:
 
@@ -10,18 +10,31 @@ class Compiler:
         self.type_map={
             'int':ir.IntType(32),
             'float':ir.FloatType(),
-            'bool': ir.IntType(1)
+            'bool': ir.IntType(1),
+            'str':ir.PointerType(ir.IntType(8)),
+            'void': ir.VoidType()
         }
         self.module = ir.Module('main')
         self.builder = ir.IRBuilder()
         self.env = Environment()
         #keeping track of errors
         self.errors=[]
+        self.counter = 0
         self.__initialize_builtins()
     
 
 
     def __initialize_builtins(self):
+
+        def __init_print():
+            fnty = ir.FunctionType(
+                self.type_map['int'],
+                [ir.IntType(8).as_pointer()],
+                var_arg=True #handle all the parameters
+            )
+            return ir.Function(self.module, fnty, 'printf')
+
+
         def __init_booleans():
             bool_type = self.type_map['bool']
             true_var = ir.GlobalVariable(self.module, bool_type, 'true')
@@ -33,6 +46,9 @@ class Compiler:
             false_var.global_constant=True #fixed immutable values
 
             return true_var, false_var
+        
+
+        self.env.define('printf', __init_print(), ir.IntType(32))
         
         true_var, false_var = __init_booleans()
         self.env.define('true', true_var, true_var.type)
@@ -67,9 +83,6 @@ class Compiler:
 
             case NodeType.IfStatement:
                 self.__visit_if_statement(node)
-
-            case NodeType.InfixExpression:
-                self.__visit_infixExpression(node)
             
             case NodeType.CallExpression:
                 self.__visit_call_expression(node)
@@ -277,6 +290,9 @@ class Compiler:
                 args.append(p_val)
                 types.append(p_type)
         match name:
+            case 'printf':
+                ret = self.builtin_printf(params=args, return_type=types[0])
+                ret_type = self.type_map['int']
             case _:
                 func, ret_type = self.env.lookup(name)
                 ret = self.builder.call(func, args)
@@ -312,7 +328,48 @@ class Compiler:
                 node = node
                 return ir.Constant(ir.IntType(1), 1 if node.value else 0), ir.IntType(1)
             
+            case NodeType.StringLiteral:
+                node = node
+                string, Type = self.__convert_string(node.value)
+                return string, Type
+            
             case NodeType.InfixExpression:
                 return self.__visit_infixExpression(node)
             case NodeType.CallExpression:
                 return self.__visit_call_expression(node)
+
+
+    def __increment_counter(self):
+        self.counter += 1
+        return self.counter
+
+    def __convert_string(self, string):
+        string = string.replace("\\n", "\n")
+        fmt = f"{string}\0"
+        c_fmt = ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt)), bytearray(fmt.encode("utf8")))
+        global_fmt = ir.GlobalVariable(self.module, c_fmt.type, name=f'__str_{self.__increment_counter()}')
+        global_fmt.linkage = 'internal'
+        global_fmt.global_constant = True
+        global_fmt.initializer = c_fmt
+        return global_fmt, global_fmt.type
+
+    def builtin_printf(self, params, return_type):
+        func, _ = self.env.lookup('printf')
+
+        # First argument: string literal (GlobalVariable)
+        fmt_val = params[0]
+        if isinstance(fmt_val, ir.GlobalVariable):
+            fmt_arg = self.builder.bitcast(fmt_val, ir.IntType(8).as_pointer())
+        else:
+            fmt_arg = fmt_val
+
+        rest_params = []
+        for arg in params[1:]:
+            if hasattr(arg, "type"):  # likely an LLVM value
+                rest_params.append(arg)
+            else:
+                # AST node, resolve it
+                val, typ = self.__resolve_value(arg)
+                rest_params.append(val)
+
+        return self.builder.call(func, [fmt_arg, *rest_params])
