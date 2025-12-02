@@ -52,9 +52,11 @@ Pneuma (πνεῦμα) is a modern, JIT-style compiled programming language desi
 3. Install Python 3.7+ and Anaconda (or Miniconda) if not already installed.
 4. Open your terminal (or Anaconda Prompt) inside the project folder.
 5. Create and activate a dedicated Conda environment:
+```
      conda create --name Pneuma python=3.12
      conda install llvmlite
      conda activate Pneuma
+```
 6. Clone the Repository: git clone https://github.com/seanSalehin/Pneuma-Programming-Language.git
 7. Place all your .pn files in the Test folder.
 8. Edit main.pn to write your program.
