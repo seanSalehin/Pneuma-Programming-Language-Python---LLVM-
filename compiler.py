@@ -1,8 +1,11 @@
 from llvmlite import ir
-
+import os
 from AST import NodeType, Statement, Expression, Program, ExpressionStatement, InfixExpression, IntegerLiteral, FloatLiteral, IdentifierLiteral, WhileStatement, BreakStatement, ContinueStatement, ForStatement
 from Environment import Environment
-from AST import FunctionStatement, BlockStatement, ReturnStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter, StringLiteral, PrefixExpression, PostfixExpression
+from AST import FunctionStatement, BlockStatement, ReturnStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter, StringLiteral, PrefixExpression, PostfixExpression, ImportStatement
+from Lexer import Lexer
+from parser import Parser
+
 
 class Compiler:
 
@@ -25,6 +28,8 @@ class Compiler:
         #for loop block (for, continue, break)
         self.breakpoints = []
         self.continues = []
+
+        self.global_parsed_pallets = {}
     
 
 
@@ -105,6 +110,9 @@ class Compiler:
 
             case NodeType.PostfixExpression:
                 self.__visit_postfix_expression(node)
+
+            case NodeType.ImportStatement:
+                self.__visit_import_expression(node)
 
 
 
@@ -542,6 +550,59 @@ class Compiler:
         # Clean up
         self.breakpoints.pop()
         self.continues.pop()
+
+
+    
+    def __visit_import_expression(self, node):
+        file = node.file
+        if self.global_parsed_pallets.get(file) is not None:
+            print(f"[warning] : `{file}` is already imported globally \n")
+            return
+        
+        # Use os.path.join for cross-platform compatibility
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_dir, "Test", file)
+        
+        if not os.path.exists(file_path):
+            # Try relative path
+            file_path = os.path.join("Test", file)
+            if not os.path.exists(file_path):
+                print(f"Error: File '{file}' not found. Looked in: {file_path}")
+                return
+        
+        with open(file_path, 'r') as f:
+            pallet_code = f.read()
+
+        l = Lexer(source=pallet_code)
+        p = Parser(lexer=l)
+        program = p.parse_program()
+        
+        # Check for parser errors
+        if len(p.errors) > 0:
+            print(f"Parsing error in file => {file}")
+            for err in p.errors:
+                print(err)
+            exit(1)
+        
+        # DON'T create a new environment - compile into the current environment
+        # This makes imported functions available to the current scope
+        previous_breakpoints = self.breakpoints
+        previous_continues = self.continues
+        
+        # Reset loop control stacks for clean compilation
+        self.breakpoints = []
+        self.continues = []
+        
+        # Compile the imported program in the CURRENT environment
+        self.compile(node=program)
+        
+        # Restore loop control stacks
+        self.breakpoints = previous_breakpoints
+        self.continues = previous_continues
+        
+        # Store the imported program
+        self.global_parsed_pallets[file] = program
+
 
 
 

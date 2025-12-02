@@ -25,6 +25,7 @@ class NodeType(Enum):
     ForStatement = "ForStatement"
     PrefixExpression = "PrefixExpression"
     PostfixExpression = "PostfixExpression"
+    ImportStatement = "ImportStatement"
 
 class Node(ABC):
     #each node represents a piece of the program's syntax.
@@ -398,3 +399,18 @@ class StringLiteral(Expression):
             "type": self.type().value,
             "value": self.value
         }
+    
+
+class ImportStatement(Statement):
+    def __init__(self, file):
+        self.file = file
+
+    def type(self):
+        return NodeType.ImportStatement
+
+    def json(self):
+        return {
+            "type": self.type().value,
+            "file": self.file
+        }
+

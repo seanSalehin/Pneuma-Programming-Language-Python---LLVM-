@@ -2,7 +2,7 @@ from Lexer import Lexer
 from Token import Token, TokenType
 from typing import Callable
 from enum import Enum, auto
-from AST import Statement, Expression, Program, ExpressionStatement, InfixExpression, IntegerLiteral, FloatLiteral, IdentifierLiteral, LetStatement, WhileStatement, PrefixExpression, PostfixExpression
+from AST import Statement, Expression, Program, ExpressionStatement, InfixExpression, IntegerLiteral, FloatLiteral, IdentifierLiteral, LetStatement, WhileStatement, PrefixExpression, PostfixExpression, ImportStatement
 from AST import FunctionStatement, ReturnStatement, BlockStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter, StringLiteral, BreakStatement, ForStatement, ContinueStatement
 
 # precedence Type => evels of operator priority from lowest to highest
@@ -191,6 +191,8 @@ class Parser:
                 return self.__parse_break_statement()
             case TokenType.FOR:
                 return self.__parse_for_statement()
+            case TokenType.IMPORT:
+                return self.__parse_import_statement()
             case _:
                 return self.__parse_expression_statement()
     
@@ -505,3 +507,15 @@ class Parser:
         return stmt
 
 
+
+    def __parse_import_statement(self):
+        #check if it's a file
+        if not self.__expect_peek(TokenType.STRING):
+            return None
+        
+        stmt = ImportStatement(file=self.current_token.literal)
+
+        if not self.__expect_peek(TokenType.SEMICOLON):
+            return None
+        
+        return stmt

@@ -63,6 +63,7 @@ class TokenType(Enum):
     CONTINUE = "CONTINUE"
     BREAK = "BREAK"
     FOR = "FOR"
+    IMPORT = "IMPORT"
 
     #Syntax - Typing
     TYPE = "TYPE"
@@ -96,7 +97,7 @@ KEYWORDS: dict[str, TokenType] = {
     "continue":TokenType.CONTINUE,
     "break":TokenType.BREAK,
     "for":TokenType.FOR,
-
+    "import":TokenType.IMPORT,
 }
 
 ALT_KEYWORDS: dict[str, TokenType]={
@@ -112,6 +113,7 @@ ALT_KEYWORDS: dict[str, TokenType]={
     "break":TokenType.BREAK,
     "continue":TokenType.CONTINUE,
     "scan": TokenType.FOR,
+    "load":TokenType.IMPORT,
 }
 
 TYPE_KEYWORDS: list[str] = ["int", "float", "str", "void"]

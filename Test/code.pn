@@ -1,5 +1,16 @@
-act main() => void {
-    mark x:str = "test";
-    printf(x);
-}
+load "test.pn";
 
+act main()=>int {
+    mark x:int = 0;
+    scan (mark y:int = 0; y<10; y++){
+        if(y == 4){
+            printf("y + 2: %i\n", test_add(y, 5));
+        }
+        if (y == 8){
+            break;
+        }
+        printf("y = %i\n", y);
+        x=y;
+    }
+    return x;
+}
