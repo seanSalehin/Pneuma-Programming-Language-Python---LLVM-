@@ -23,6 +23,8 @@ class NodeType(Enum):
     BreakStatement = "BreakStatement"
     ContinueStatement = "ContinueStatement"
     ForStatement = "ForStatement"
+    PrefixExpression = "PrefixExpression"
+    PostfixExpression = "PostfixExpression"
 
 class Node(ABC):
     #each node represents a piece of the program's syntax.
@@ -122,9 +124,10 @@ class FunctionStatement(Statement):
 
 
 class AssignStatement(Statement):
-    def __init__(self, ident:Expression=None, right_value = None ):
+    def __init__(self, ident:Expression=None, operator = "", right_value = None ):
         self.ident = ident
         self.right_value=right_value
+        self.operator=operator
     def type(self):
         return NodeType.AssignStatement
     def json(self):
@@ -291,6 +294,37 @@ class CallExpression(Expression):
             "arguments":[arg.json() for arg in self.arguments]
         }
     
+
+class PrefixExpression(Expression):
+    def __init__(self, operator, right_node = None):
+        self.operator=operator
+        self.right_node = right_node
+
+    def type(self):
+        return NodeType.PrefixExpression
+    
+    def json(self):
+        return {
+            "type":self.type().value,
+            "operator":self.operator,
+            "right_node": self.right_node.json()
+        }
+    
+
+class PostfixExpression(Expression):
+    def __init__(self, operator, left_node = None):
+        self.operator=operator
+        self.left_node = left_node
+
+    def type(self):
+        return NodeType.PostfixExpression
+    
+    def json(self):
+        return {
+            "type":self.type().value,
+            "operator":self.operator,
+            "left_node": self.left_node.json()
+        }
 
 #Literals
 class IntegerLiteral(Expression):

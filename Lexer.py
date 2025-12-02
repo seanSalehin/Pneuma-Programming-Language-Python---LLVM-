@@ -98,7 +98,16 @@ class Lexer:
         
         match self.current_character:
             case'+':
-                token=self.__new_token(TokenType.PLUS, self.current_character)
+                if self.__peek_char() == "=":
+                    ch = self.current_character
+                    self.__read_char()
+                    token=self.__new_token(TokenType.PLUS_EQ, ch + self.current_character)
+                elif self.__peek_char() == "+":
+                    ch = self.current_character
+                    self.__read_char()
+                    token=self.__new_token(TokenType.PLUS_PLUS, ch + self.current_character)
+                else:
+                    token=self.__new_token(TokenType.PLUS, self.current_character)
 
             case'-':
                 #Handle arrow for functions
@@ -106,13 +115,33 @@ class Lexer:
                     ch=self.current_character
                     self.__read_char()
                     token  = self.__new_token(TokenType.ARROW, ch + self.current_character)
+                elif self.__peek_char()=='=':
+                    ch=self.current_character
+                    self.__read_char()
+                    token  = self.__new_token(TokenType.MINUS_EQ, ch + self.current_character)
+                elif self.__peek_char() == "-":
+                    ch = self.current_character
+                    self.__read_char()
+                    token=self.__new_token(TokenType.MINUS_MINUS, ch + self.current_character)
                 else:
                     token=self.__new_token(TokenType.MINUS, self.current_character)
 
             case'*':
-                token=self.__new_token(TokenType.ASTERISK, self.current_character)
+                if self.__peek_char()=="=":
+                    ch=self.current_character
+                    self.__read_char()
+                    token  = self.__new_token(TokenType.MUL_EQ, ch + self.current_character)
+                else:
+                    token=self.__new_token(TokenType.ASTERISK, self.current_character)
+
             case'/':
-                token=self.__new_token(TokenType.SLASH, self.current_character)                
+                if self.__peek_char()=='=':
+                    ch=self.current_character
+                    self.__read_char()
+                    token  = self.__new_token(TokenType.DIV_EQ, ch + self.current_character)
+                else:
+                    token=self.__new_token(TokenType.SLASH, self.current_character)   
+
             case'^':
                 token=self.__new_token(TokenType.POW, self.current_character)
             case'%':
@@ -152,8 +181,7 @@ class Lexer:
                     self.__read_char()
                     token  = self.__new_token(TokenType.NOT_EQ, ch + self.current_character)
                 else:
-                    #TODO
-                    token  = self.__new_token(TokenType.ILLEGAL, self.current_character)
+                    token  = self.__new_token(TokenType.BANG, self.current_character)
 
             case ':':
                 token=self.__new_token(TokenType.COLON, self.current_character)    

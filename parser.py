@@ -2,7 +2,7 @@ from Lexer import Lexer
 from Token import Token, TokenType
 from typing import Callable
 from enum import Enum, auto
-from AST import Statement, Expression, Program, ExpressionStatement, InfixExpression, IntegerLiteral, FloatLiteral, IdentifierLiteral, LetStatement, WhileStatement
+from AST import Statement, Expression, Program, ExpressionStatement, InfixExpression, IntegerLiteral, FloatLiteral, IdentifierLiteral, LetStatement, WhileStatement, PrefixExpression, PostfixExpression
 from AST import FunctionStatement, ReturnStatement, BlockStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter, StringLiteral, BreakStatement, ForStatement, ContinueStatement
 
 # precedence Type => evels of operator priority from lowest to highest
@@ -35,6 +35,8 @@ PRECEDENCES:dict[TokenType, PresedanceType]={
      TokenType.LT_EQ:PresedanceType.P_LESSGREATER,
      TokenType.GT_EQ:PresedanceType.P_LESSGREATER,
      TokenType.LEFTPARENTHESES:PresedanceType.P_CALL,
+     TokenType.PLUS_PLUS: PresedanceType.P_INDEX,
+     TokenType.MINUS_MINUS: PresedanceType.P_INDEX,
 }
 
 
@@ -54,6 +56,9 @@ class Parser:
             TokenType.TRUE:self.__parse_boolean,
             TokenType.FALSE:self.__parse_boolean,
             TokenType.STRING:self.__parse_string_literal,
+            TokenType.MINUS:self.__parse_prefix_expression,
+            TokenType.BANG:self.__parse_prefix_expression,
+            TokenType.LBRACE: self.__parse_block_expression,
         }
 
         self.infix_parse={
@@ -70,6 +75,8 @@ class Parser:
             TokenType.LT_EQ: self.__parse_infix_expression,
             TokenType.GT_EQ: self.__parse_infix_expression,
             TokenType.LEFTPARENTHESES:self.__parse_call_expression,
+            TokenType.PLUS_PLUS:self.__parse_postfix_expression,
+            TokenType.MINUS_MINUS:self.__parse_postfix_expression,
         }
 
 
@@ -95,6 +102,16 @@ class Parser:
             return False
         return self.peek_token.type == tt
     
+
+    def __peek_token_is_assignment(self):
+        assignment_operators = [
+            TokenType.EQ,
+            TokenType.PLUS_EQ,
+            TokenType.MINUS_EQ,
+            TokenType.MUL_EQ,
+            TokenType.DIV_EQ,
+        ]
+        return self.peek_token.type in assignment_operators
 
 
     def __peek_error(self, tt):
@@ -156,7 +173,7 @@ class Parser:
 
     #statement methods
     def __parse_statement(self):
-        if self.current_token.type ==TokenType.IDENT and self.__peek_token(TokenType.EQ):
+        if self.current_token.type ==TokenType.IDENT and self.__peek_token_is_assignment():
             return self.__parse_assignment_statement()
         
         match self.current_token.type:
@@ -309,6 +326,7 @@ class Parser:
         stmt = AssignStatement()
         stmt.ident = IdentifierLiteral(value = self.current_token.literal)
         self.__next_token()
+        stmt.operator=self.current_token.literal
         self.__next_token()
         stmt.right_value = self.__parse_expression(PresedanceType.P_LOWEST)
         self.__next_token()
@@ -391,6 +409,17 @@ class Parser:
             return None
         return e_list
 
+    def __parse_prefix_expression(self):
+        prefix_expr = PrefixExpression(operator = self.current_token.literal)
+        self.__next_token()
+        prefix_expr.right_node = self.__parse_expression(PresedanceType.P_PREFIX)
+        return prefix_expr
+    
+
+    def __parse_postfix_expression(self, left_node):
+        return PostfixExpression(left_node=left_node, operator=self.current_token.literal)
+    
+
 
     #prefix methods
     def __parse_int_literal(self):
@@ -419,6 +448,9 @@ class Parser:
 
     def __parse_boolean(self):
         return BooleanLiteral(value=(self.current_token.type == TokenType.TRUE))
+    
+    def __parse_block_expression(self):
+        return self.__parse_block_statement()
     
 
     def __parse_string_literal(self):
@@ -463,7 +495,8 @@ class Parser:
             return None
         self.__next_token()
 
-        stmt.action=self.__parse_assignment_statement()
+        stmt.action=self.__parse_expression(PresedanceType.P_LOWEST)
+        self.__next_token()
         
         if not self.__expect_peek(TokenType.LBRACE):
             return None

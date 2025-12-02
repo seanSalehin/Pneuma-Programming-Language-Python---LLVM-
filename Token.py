@@ -8,14 +8,11 @@ class TokenType(Enum):
     #Lexor Error
     ILLEGAL = "ILLEGAL"
     
-
     #Data Types
     IDENT = "IDENT"
     INT = "INT"
     FLOAT = "FLOAT"
-    STRING = "STRING"
-    
-
+    STRING = "STRING" 
 
     #Arithmatic Symbols
     PLUS = "PLUS"
@@ -25,10 +22,14 @@ class TokenType(Enum):
     POW = "POW"
     MODULUS = "MODULUS"
 
-
     #Assignment Symbols
     EQ = "EQ"
-
+    PLUS_EQ = "PLUS_EQ"
+    MINUS_EQ = "MINUS_EQ"
+    MUL_EQ = "MUL_EQ"
+    DIV_EQ = "DIV_EQ"
+    PLUS_PLUS = "PLUS_PLUS"
+    MINUS_MINUS = "MINUS_MINUS"
 
     #Comparison SYmbols
     LT = '<'
@@ -37,7 +38,6 @@ class TokenType(Enum):
     NOT_EQ = '!='
     LT_EQ = '<='
     GT_EQ = '>='
-
 
     #Symbols
     COLON = "COLON"
@@ -48,6 +48,7 @@ class TokenType(Enum):
     ARROW = "ARROW"
     LBRACE = "LBRACE"
     RBRACE = "RBRACE"
+    BANG = "BANG"
 
 
     #Syntax - Keywords
@@ -65,7 +66,6 @@ class TokenType(Enum):
 
     #Syntax - Typing
     TYPE = "TYPE"
-
 
 
 class Token:

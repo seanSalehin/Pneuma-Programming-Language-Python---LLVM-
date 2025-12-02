@@ -2,7 +2,7 @@ from llvmlite import ir
 
 from AST import NodeType, Statement, Expression, Program, ExpressionStatement, InfixExpression, IntegerLiteral, FloatLiteral, IdentifierLiteral, WhileStatement, BreakStatement, ContinueStatement, ForStatement
 from Environment import Environment
-from AST import FunctionStatement, BlockStatement, ReturnStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter, StringLiteral
+from AST import FunctionStatement, BlockStatement, ReturnStatement, AssignStatement, IfStatement, BooleanLiteral, CallExpression, FunctionParameter, StringLiteral, PrefixExpression, PostfixExpression
 
 class Compiler:
 
@@ -103,7 +103,9 @@ class Compiler:
             case NodeType.ForStatement:
                 self.__visit_for_statement(node)
 
-    
+            case NodeType.PostfixExpression:
+                self.__visit_postfix_expression(node)
+
 
 
     def __visit_program(self, node):
@@ -184,13 +186,63 @@ class Compiler:
 
     def __visit_assign_statement(self, node):
         name = node.ident.value
+        operator = node.operator
         value = node.right_value
-        value, Type = self.__resolve_value(value)
+        
         if self.env.lookup(name) is None:
             self.errors.append(f"Compile Error: Identifier {name} has not been declared")
-        else:
-            ptr, _ = self.env.lookup(name)
-            self.builder.store(value, ptr)
+            return
+
+        right_value, right_type = self.__resolve_value(value)
+
+        variable_pointer, _ = self.env.lookup(name)
+        original_value = self.builder.load(variable_pointer)
+        if isinstance(original_value.type, ir.IntType) and isinstance(right_type, ir.FloatType):
+            original_value = self.builder.sitofp(original_value, ir.FloatType())
+        
+        if isinstance(original_value.type, ir.FloatType) and isinstance(right_type, ir.IntType):
+            original_value = self.builder.sitofp(right_value, ir.FloatType())
+
+        value = None
+        Type = None
+
+        match operator:
+            case '=':
+                value = right_value
+
+            case '+=':
+                if isinstance(original_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.add(original_value, right_value)
+                else:
+                    value = self.builder.fadd(original_value, right_value)
+
+            case '-=':
+                if isinstance(original_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.sub(original_value, right_value)
+                else:
+                    value = self.builder.fsub(original_value, right_value)
+        
+            case '*=':
+                if isinstance(original_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.mul(original_value, right_value)
+                else:
+                    value = self.builder.fmul(original_value, right_value)
+        
+            case '/=':
+                if isinstance(original_value.type, ir.IntType) and isinstance(right_type, ir.IntType):
+                    value = self.builder.sdiv(original_value, right_value)
+                else:
+                    value = self.builder.fdiv(original_value, right_value)
+
+            case '-':
+                 print("Wrong Assignment Operator")
+
+        pointer, _ = self.env.lookup(name)
+        self.builder.store(value, pointer)
+
+
+
+
 
 
     def __visit_if_statement(self, node):
@@ -315,6 +367,65 @@ class Compiler:
         return ret, ret_type
     
 
+
+    def __visit_prefix_expression(self, node):
+        operator=node.operator
+        right_node = node.right_node
+        right_value, right_type = self.__resolve_value(right_node)
+        Type = None
+        value = None
+        if isinstance(right_type, ir.FloatType):
+            Type = ir.FloatType()
+            match operator:
+                case '-':
+                    value = self.builder.fmul(right_value, ir.Constant(ir.FloatType(), -1.0)) #flip the case and make negative into positive
+                case '!':
+                    value = ir.Constant(ir.IntType(1), 0)
+        elif isinstance(right_type, ir.IntType):
+            Type = ir.IntType(32)
+            match operator:
+                case '-':
+                    value = self.builder.mul(right_value, ir.Constant(ir.IntType(32), -1))
+                case '!':
+                    value = self.builder.not_(right_value)
+        return value, Type
+
+
+
+
+    def __visit_postfix_expression(self, node):
+        left_node = node.left_node
+        operator = node.operator
+        if self.env.lookup(left_node.value) is None:
+            self.errors.append(f"COMPILE ERROR : Identifier {left_node.value} has not been declared !")
+            return
+        var_pointer, var_type = self.env.lookup(left_node.value)
+        original_value = self.builder.load(var_pointer)
+        value = None
+        match operator:
+            case "++":
+                if isinstance(original_value.type, ir.IntType):
+                    value = self.builder.add(original_value, ir.Constant(ir.IntType(32), 1))
+                elif isinstance(original_value, ir.FloatType):
+                    value = self.builder.fadd(original_value, ir.Constant(ir.FloatType(), 1.0))
+                else:
+                    self.errors.append(f"COMPILE ERROR: Unsupported type for ++ operator")
+                    return None, None
+    
+            case "--":
+                if isinstance(original_value.type, ir.IntType):
+                    value = self.builder.sub(original_value, ir.Constant(ir.IntType(32), 1))
+                elif isinstance(original_value, ir.FloatType):
+                    value = self.builder.fsub(original_value, ir.Constant(ir.FloatType(), 1.0))
+                else:
+                    self.errors.append(f"COMPILE ERROR: Unsupported type for -- operator")
+                    return None, None
+    
+        self.builder.store(value, var_pointer)
+        return original_value, var_type
+    
+    
+
     def __visit_while_expression(self, node):
         # node has .condition and .body
         func = self.builder.block.function  # current function object
@@ -375,15 +486,12 @@ class Compiler:
         # check if we should enter the loop
         self.builder.position_at_start(cond_bb)
         cond_val, cond_type = self.__resolve_value(condition)
-        
+    
         # Convert condition to i1 if needed
         if isinstance(cond_type, ir.IntType) and cond_type.width > 1:
             zero = ir.Constant(cond_type, 0)
             cond_val = self.builder.icmp_signed('!=', cond_val, zero)
-        
         self.builder.cbranch(cond_val, body_bb, after_bb)
-        
-        # BODY BLOCK
         self.builder.position_at_start(body_bb)
         self.compile(body)
         
@@ -401,6 +509,8 @@ class Compiler:
         self.breakpoints.pop()
         self.continues.pop()
         self.env = previous_env
+
+
 
     def __resolve_value(self, node, value_type=None):
         match node.type():
@@ -438,6 +548,11 @@ class Compiler:
                 return self.__visit_infixExpression(node)
             case NodeType.CallExpression:
                 return self.__visit_call_expression(node)
+            case NodeType.PrefixExpression:
+                return self.__visit_prefix_expression(node)
+            case NodeType.PostfixExpression:
+                return self.__visit_postfix_expression(node)
+
 
 
     def __increment_counter(self):

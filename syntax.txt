@@ -5,9 +5,13 @@ varibles => Mark
 Declearing a variable :
 mark x:int = 10;
 
+
+Some of the Features:
+
 ///////////////////////////////////////////
 
 Function : 
+
 act main() => int{
     mark x: int = 4;
 
@@ -17,6 +21,7 @@ act main() => int{
 //////////////////////////////////////////
 
 Assignment:
+
 act main() => int{
     mark x:int = 40;
     x = x * 2;
@@ -27,6 +32,7 @@ act main() => int{
 ///////////////////////////////////////////
 
 If statement
+
 act main() => int {
     mark a:int = 5;
     if a ==5{
@@ -196,3 +202,61 @@ y = 10
 
 
 ////////////////////////////////////////////////////
+act main()=>int{
+    mark x:int = -10;
+
+    for(mark y:int = 0; y<10; y +=1){
+        if(y == 5){
+            break;
+        }
+        if (!false){
+            printf("correct ");
+        }
+       printf("y = %i\n", y)
+        x = y;
+    }
+    return x;
+}
+
+result
+
+correct y = 0
+correct y = 1
+correct y = 2
+correct y = 3
+correct y = 4
+Result: 4
+
+////////////////////////////////////////////////////
+
+act main() => int {
+    mark x:int = 0;
+    
+    scan (mark y:int = 0; y<10; y++){
+        if (y == 3){
+            break;
+        }
+        printf("y = %i\n", y);
+        x = y;
+    }
+    return x;
+}
+
+
+or 
+
+
+act main() => int {
+    mark x:int = 0;
+    
+    scan (mark y:int = 20; y>10; y--){
+        if (y == 15){
+            break;
+        }
+        printf("y = %i\n", y);
+        x = y;
+    }
+    return x;
+}
+
+///////////////////////////////////////
