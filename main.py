@@ -7,6 +7,7 @@ from compiler import Compiler
 from llvmlite import ir
 import llvmlite.binding as llvm
 from ctypes import CFUNCTYPE, c_int, c_float
+import os
 
 
 Lexer_Bug=False
@@ -16,9 +17,14 @@ RUN_CODE = True
 
 
 if __name__=='__main__':
-    with open("Test/functionThree.Pneuma", 'r') as f:
-        code=f.read()
 
+    for filename in os.listdir('.'):
+        if filename.endswith('.Pneuma'):
+            new_filename = filename.replace('.Pneuma', '.pn')
+            os.rename(filename, new_filename)
+
+    with open("Test/code.pn", 'r') as f:
+        code=f.read()
 
 
     #lexer debug

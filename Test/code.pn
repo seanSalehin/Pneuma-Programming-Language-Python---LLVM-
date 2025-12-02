@@ -1,0 +1,5 @@
+act main() => void {
+    mark x:str = "test";
+    printf(x);
+}
+

@@ -1,2 +1,0 @@
-let x:int = 12;
-mark x:int = 12;

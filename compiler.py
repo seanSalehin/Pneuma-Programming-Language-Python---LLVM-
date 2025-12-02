@@ -142,9 +142,14 @@ class Compiler:
 
     
     def __visit_return_statement(self, node):
-        value = node.return_value
-        value, Type = self.__resolve_value(value)
-        self.builder.ret(value)
+        if node.return_value is None:
+            self.builder.ret_void()
+        else:
+            value, Type = self.__resolve_value(node.return_value)
+            if isinstance(Type, ir.ArrayType):
+                value = self.builder.gep(value, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                Type = ir.PointerType(ir.IntType(8))
+            self.builder.ret(value)
 
 
 
@@ -179,6 +184,21 @@ class Compiler:
 
         self.env.define(name, func, return_type)
         self.compile(body)
+
+        if self.builder.block.terminator is None:
+            if return_type == self.type_map['void']:
+                self.builder.ret_void()
+            else:
+                # For non-void functions without return, add an error
+                self.errors.append(f"Function '{name}' must return a value")
+                # Add a dummy return to avoid LLVM errors
+                if return_type == self.type_map['int']:
+                    self.builder.ret(ir.Constant(return_type, 0))
+                elif return_type == self.type_map['float']:
+                    self.builder.ret(ir.Constant(return_type, 0.0))
+                else:
+                    self.builder.ret_void()
+
         self.env=previous_env
         self.env.define(name, func, return_type)
         self.builder = previous_builder
@@ -264,8 +284,6 @@ class Compiler:
                 with otherwise:
                     if alternative is not None:
                         self.compile(alternative)
-                    else:
-                        self.builder.ret_void() 
 
 
 
@@ -424,7 +442,7 @@ class Compiler:
         self.builder.store(value, var_pointer)
         return original_value, var_type
     
-    
+
 
     def __visit_while_expression(self, node):
         # node has .condition and .body
@@ -466,36 +484,50 @@ class Compiler:
     def __visit_continue_statement(self, node):
         self.builder.branch(self.continues[-1])
 
+
+
+
     def __visit_for_statement(self, node):
         var_declaration = node.var_declaration
         condition = node.condition
         action = node.action
         body = node.body
-        previous_env = self.env
-        self.env = Environment(parent=previous_env)
+        
         self.compile(var_declaration)
+        
         func = self.builder.block.function
         cond_bb = func.append_basic_block(f"for_cond_{self.__increment_counter()}")
         body_bb = func.append_basic_block(f"for_body_{self.__increment_counter()}")
         inc_bb = func.append_basic_block(f"for_inc_{self.__increment_counter()}")
         after_bb = func.append_basic_block(f"for_after_{self.__increment_counter()}")
+        
+        # Setup break/continue targets
         self.breakpoints.append(after_bb)
         self.continues.append(inc_bb)
+        
+        # Jump to condition block
         self.builder.branch(cond_bb)
         
-        # check if we should enter the loop
+        # CONDITION BLOCK
         self.builder.position_at_start(cond_bb)
         cond_val, cond_type = self.__resolve_value(condition)
-    
+        
         # Convert condition to i1 if needed
         if isinstance(cond_type, ir.IntType) and cond_type.width > 1:
             zero = ir.Constant(cond_type, 0)
             cond_val = self.builder.icmp_signed('!=', cond_val, zero)
-        self.builder.cbranch(cond_val, body_bb, after_bb)
-        self.builder.position_at_start(body_bb)
-        self.compile(body)
         
-        # If body didn't end with a terminator (break/continue/return), go to increment
+        self.builder.cbranch(cond_val, body_bb, after_bb)
+        
+        # BODY BLOCK
+        self.builder.position_at_start(body_bb)
+        # Create a new environment for the loop body only
+        previous_env = self.env
+        self.env = Environment(parent=previous_env)
+        self.compile(body)
+        self.env = previous_env
+        
+        # If body didn't end with terminator (break/continue/return), go to increment
         if self.builder.block.terminator is None:
             self.builder.branch(inc_bb)
         
@@ -506,9 +538,10 @@ class Compiler:
         
         # AFTER BLOCK
         self.builder.position_at_start(after_bb)
+        
+        # Clean up
         self.breakpoints.pop()
         self.continues.pop()
-        self.env = previous_env
 
 
 
@@ -567,7 +600,8 @@ class Compiler:
         global_fmt.linkage = 'internal'
         global_fmt.global_constant = True
         global_fmt.initializer = c_fmt
-        return global_fmt, global_fmt.type
+        ptr = self.builder.gep(global_fmt, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+        return ptr, ir.PointerType(ir.IntType(8))
 
     def builtin_printf(self, params, return_type):
         func, _ = self.env.lookup('printf')
