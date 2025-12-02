@@ -1,6 +1,10 @@
-🌟 Pneuma Programming Language v2.8.1 🌟
+# 🌟 Pneuma Programming Language v2.8.1
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/seanSalehin/Pneuma-Programming-Language)](https://github.com/seanSalehin/Pneuma-Programming-Language/releases)
 
 Pneuma (πνεῦμα) – A modern, JIT-style compiled programming language designed for clarity, performance, and expressive syntax. Named after the ancient Greek concept of "breath" or "spirit," Pneuma aims to breathe life into your ideas with clean, type-safe code.
+
 
 ✨ Features:
 
@@ -28,6 +32,7 @@ Pneuma (πνεῦμα) – A modern, JIT-style compiled programming language des
 
 ✅ Assignment Operations	(*=, +=, -=, /=, !=) => (x *= 2;)
 
+
 🚀 Quick Start:
 
 1. Create a new folder for your project (e.g., Pneuma).
@@ -43,11 +48,13 @@ Pneuma (πνεῦμα) – A modern, JIT-style compiled programming language des
 8. Edit main.pn to write your program.
 9. To run, execute (from the root folder): python main.py
 
+
 ⚡ Important Project Rules:
 
 Entry Point: All programs must contain act main() => return_type as the starting point
 File Organization: Place all .pn source files within the Test folder
 File Extensions: Use .pn for all Pneuma source files
+
 
 📚 Language Guide
 
@@ -76,6 +83,7 @@ File Extensions: Use .pn for all Pneuma source files
 📖 Learning Resources
 
 For detailed tutorials and code samples, please navigate to the Tutorials.txt file inside the Test folder. This file contains step-by-step guides and practical examples to help you get started and understand the implementation process.
+
 
 📄 License
 © 2024 Pneuma Language Project. All rights reserved.
