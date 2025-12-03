@@ -105,7 +105,7 @@ For detailed tutorials and code samples, please navigate to the Tutorials.txt fi
 
 ## 📄 License
 
-© 2024 Pneuma Language Project. All rights reserved.
+© 2025 Pneuma Language Project. All rights reserved.
 
 This project does not have an open-source license. By default, all rights are reserved. Use, modification, and distribution of the source code are not permitted without explicit permission from the project maintainer.
 
